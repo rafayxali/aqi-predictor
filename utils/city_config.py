@@ -1,0 +1,4 @@
+CITY_NAME = "Islamabad"
+AQICN_SLUG = "islamabad"
+LATITUDE = 33.7235
+LONGITUDE = 73.11822

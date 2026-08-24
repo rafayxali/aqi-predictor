@@ -1,0 +1,30 @@
+# --- Core ---
+python-dotenv==1.0.1
+requests==2.32.3
+pandas==2.1.4
+numpy==1.26.4
+
+# --- Feature Store / Model Registry ---
+hopsworks==5.0.x
+
+# --- Machine Learning ---
+scikit-learn==1.5.1
+tensorflow==2.17.0
+
+# --- Explainability ---
+shap==0.46.0
+
+# --- Web App ---
+streamlit==1.38.0
+flask==3.0.3
+
+# --- Plotting (EDA / dashboard charts) ---
+matplotlib==3.9.2
+seaborn==0.13.2
+plotly==5.24.0
+
+# --- Notebook support (for EDA in VS Code / Colab) ---
+jupyter==1.0.0
+ipykernel==6.29.5
+
+hopsworks[python]
