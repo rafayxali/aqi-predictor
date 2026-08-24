@@ -93,6 +93,25 @@ def build_feature_row(pollution: dict, weather: dict) -> pd.DataFrame:
 
     df = pd.DataFrame([row])
     df = add_time_features(df, timestamp_col="timestamp")
+
+    # Explicit dtype enforcement — must exactly match
+    # push_backfill_to_hopsworks.py's casting, otherwise Hopsworks will
+    # reject inserts with a schema-mismatch error (this happened once
+    # already: OpenWeather sometimes returns whole-number humidity/
+    # pressure, which pandas silently infers as int rather than float).
+    float_cols = [
+        "pm25_median", "pm10_median", "o3_median", "no2_median",
+        "so2_median", "co_median", "temperature_median",
+        "humidity_median", "pressure_median", "wind_speed_median",
+    ]
+    int_cols = ["aqi", "hour_of_day", "day_of_week", "month", "is_weekend"]
+
+    for col in float_cols:
+        df[col] = df[col].astype("float64")
+    for col in int_cols:
+        df[col] = df[col].astype("int64")
+    df["city"] = df["city"].astype(str)
+
     return df
 
 

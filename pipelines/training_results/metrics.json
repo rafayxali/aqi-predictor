@@ -1,0 +1,140 @@
+{
+    "dataset": {
+        "source": "hopsworks:aqi_features",
+        "rows": 719,
+        "features": [
+            "aqi",
+            "aqi_lag_1",
+            "aqi_lag_2",
+            "aqi_lag_3",
+            "pm25_median",
+            "pm10_median",
+            "o3_median",
+            "no2_median",
+            "so2_median",
+            "co_median",
+            "temperature_median",
+            "humidity_median",
+            "pressure_median",
+            "wind_speed_median",
+            "day_of_week",
+            "month",
+            "is_weekend",
+            "aqi_change_rate",
+            "rolling_avg_aqi_3d",
+            "rolling_avg_aqi_7d"
+        ],
+        "targets": [
+            "aqi_next_1d",
+            "aqi_next_2d",
+            "aqi_next_3d"
+        ],
+        "test_size": 0.2
+    },
+    "baseline": {
+        "model": "Persistence Baseline (tomorrow=today)",
+        "horizons": {
+            "1_day": {
+                "rmse": 26.05469674016994,
+                "mae": 17.333333333333332,
+                "r2": 0.5170505967608513
+            },
+            "2_day": {
+                "rmse": 32.232337971532736,
+                "mae": 24.03472222222222,
+                "r2": 0.26438231609933516
+            },
+            "3_day": {
+                "rmse": 36.40398329853479,
+                "mae": 27.48611111111111,
+                "r2": 0.058802995663532975
+            }
+        },
+        "overall": {
+            "rmse": 31.848709201124272,
+            "mae": 22.95138888888889,
+            "r2": 0.2800154777078697
+        }
+    },
+    "models": [
+        {
+            "model": "Ridge Regression",
+            "horizons": {
+                "1_day": {
+                    "rmse": 23.56590643234782,
+                    "mae": 18.761647901944418,
+                    "r2": 0.6049083179277411
+                },
+                "2_day": {
+                    "rmse": 31.88368681385888,
+                    "mae": 26.707497704370464,
+                    "r2": 0.280210323485242
+                },
+                "3_day": {
+                    "rmse": 35.417489930927104,
+                    "mae": 30.77497573052063,
+                    "r2": 0.10912190305046499
+                }
+            },
+            "overall": {
+                "rmse": 30.693756280551774,
+                "mae": 25.414707112278506,
+                "r2": 0.3312873017787752
+            }
+        },
+        {
+            "model": "Random Forest",
+            "horizons": {
+                "1_day": {
+                    "rmse": 23.969499885657157,
+                    "mae": 19.051550925925923,
+                    "r2": 0.591259629747766
+                },
+                "2_day": {
+                    "rmse": 30.035967271560803,
+                    "mae": 25.061157407407407,
+                    "r2": 0.36121929495007743
+                },
+                "3_day": {
+                    "rmse": 32.27384349947175,
+                    "mae": 27.74310185185185,
+                    "r2": 0.26025148714754864
+                }
+            },
+            "overall": {
+                "rmse": 28.972959973828385,
+                "mae": 23.951936728395065,
+                "r2": 0.40416608144664534
+            }
+        },
+        {
+            "model": "TensorFlow",
+            "horizons": {
+                "1_day": {
+                    "rmse": 28.516100999825934,
+                    "mae": 23.402435090806748,
+                    "r2": 0.42149132335407646
+                },
+                "2_day": {
+                    "rmse": 31.204530792590578,
+                    "mae": 25.73189730114407,
+                    "r2": 0.31054828231799203
+                },
+                "3_day": {
+                    "rmse": 32.97323113379851,
+                    "mae": 26.86468701892429,
+                    "r2": 0.22784277917581686
+                }
+            },
+            "overall": {
+                "rmse": 30.952246712319642,
+                "mae": 25.333006470291703,
+                "r2": 0.319976617380775
+            }
+        }
+    ],
+    "best_model_today": "Random Forest",
+    "rmse_improvement_over_baseline_pct": 9.029405898793451,
+    "promoted_to_registry": true,
+    "previous_registry_best_rmse": null
+}
