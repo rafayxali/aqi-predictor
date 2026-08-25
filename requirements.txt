@@ -5,7 +5,10 @@ pandas==2.1.4
 numpy==1.26.4
 
 # --- Feature Store / Model Registry ---
-hopsworks==5.0.6
+# [python] extra pulls in confluent-kafka, required by hopsworks 5.x's
+# feature group insert/materialization path (GitHub Actions surfaced
+# this — base install alone throws ModuleNotFoundError on fg.insert()).
+hopsworks[python]==5.0.6
 
 # --- Machine Learning ---
 scikit-learn==1.5.1
