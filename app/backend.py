@@ -18,12 +18,14 @@ import os
 import sys
 import shutil
 import tempfile
+import time
 from datetime import timedelta
 
 import joblib
 import numpy as np
 import pandas as pd
 import requests
+import shap
 import hopsworks
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
@@ -61,14 +63,31 @@ _cache = {"project": None, "daily_df": None, "daily_df_ts": None}
 CACHE_TTL_SECONDS = 300  # avoid redundant Hopsworks reads across /predict + /history
 
 
+def with_retry(fn, attempts=3, delay_seconds=3):
+    """Hopsworks connections occasionally drop transiently (network
+    blips, not code bugs — seen with both the Arrow Flight query
+    service and plain REST calls). Retry a few times before giving up,
+    so a live API endpoint doesn't 500 users over a one-off hiccup."""
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn()
+        except Exception as e:
+            last_error = e
+            print(f"Hopsworks call failed (attempt {attempt}/{attempts}): {type(e).__name__}: {e}")
+            if attempt < attempts:
+                time.sleep(delay_seconds)
+    raise last_error
+
+
 def get_project():
     if _cache["project"] is None:
-        _cache["project"] = hopsworks.login(
+        _cache["project"] = with_retry(lambda: hopsworks.login(
             project=HOPSWORKS_PROJECT,
             host="eu-west.cloud.hopsworks.ai",
             port=443,
             api_key_value=HOPSWORKS_API_KEY,
-        )
+        ))
     return _cache["project"]
 
 
@@ -76,14 +95,16 @@ def get_daily_df(project):
     """Cached daily-aggregated feature data, shared by /predict and
     /history so a single page load doesn't trigger two separate slow
     Hopsworks Query Service reads."""
-    import time
     now = time.time()
     if _cache["daily_df"] is not None and (now - _cache["daily_df_ts"]) < CACHE_TTL_SECONDS:
         return _cache["daily_df"].copy()
 
-    fs = project.get_feature_store()
-    fg = fs.get_feature_group("aqi_features", version=1)
-    df = fg.read()
+    def _read():
+        fs = project.get_feature_store()
+        fg = fs.get_feature_group("aqi_features", version=1)
+        return fg.read()
+
+    df = with_retry(_read)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df["date"] = df["timestamp"].dt.date
 
@@ -168,12 +189,12 @@ def load_latest_model(project):
     artifact files it contains (Ridge/RF are .pkl, TensorFlow is
     .keras + scaler + metadata — see training_pipeline.py's ARTIFACT_MAP)."""
     mr = project.get_model_registry()
-    models = mr.get_models("aqi_predictor")
+    models = with_retry(lambda: mr.get_models("aqi_predictor"))
     if not models:
         raise HTTPException(status_code=503, detail="No model registered yet.")
 
     latest = max(models, key=lambda m: m.version)
-    model_dir = latest.download()
+    model_dir = with_retry(lambda: latest.download())
 
     files = os.listdir(model_dir)
 
@@ -282,4 +303,59 @@ def predict():
         "hazard_alert": len(hazardous) > 0,
         "hazard_days": [f["date"] for f in hazardous],
         "model_used": {"type": model_info["type"], "registry_version": model_info["version"]},
+    }
+
+
+@app.get("/explain")
+def explain(horizon: str = "day_1"):
+    """
+    SHAP feature importance for the current prediction, using
+    TreeExplainer (fast, exact for tree-based models). Currently only
+    supports the Random Forest model type — if a Ridge or TensorFlow
+    model is ever promoted instead, this returns a clear message
+    rather than an incorrect explanation.
+    """
+    horizon_index = {"day_1": 0, "day_2": 1, "day_3": 2}
+    if horizon not in horizon_index:
+        raise HTTPException(status_code=400, detail="horizon must be day_1, day_2, or day_3")
+
+    project = get_project()
+    model_info = load_latest_model(project)
+
+    if model_info["type"] != "sklearn" or not hasattr(model_info["model"], "estimators_"):
+        return {
+            "supported": False,
+            "message": f"SHAP explanation not available for model type '{model_info['type']}'.",
+        }
+
+    latest_row = load_latest_features(project)
+    X = latest_row[FEATURE_COLUMNS].values.reshape(1, -1).astype(np.float64)
+
+    explainer = shap.TreeExplainer(model_info["model"])
+    shap_values = explainer.shap_values(X)
+
+    # Multi-output RF: shap_values has shape (1, n_features, n_outputs)
+    # or is a list of per-output arrays depending on SHAP version.
+    idx = horizon_index[horizon]
+    if isinstance(shap_values, list):
+        values = shap_values[idx][0]
+    else:
+        values = shap_values[0, :, idx]
+
+    contributions = sorted(
+        [{"feature": f, "shap_value": float(v)} for f, v in zip(FEATURE_COLUMNS, values)],
+        key=lambda x: abs(x["shap_value"]),
+        reverse=True,
+    )
+
+    base_value = explainer.expected_value
+    if hasattr(base_value, "__len__"):
+        base_value = base_value[idx]
+
+    return {
+        "supported": True,
+        "horizon": horizon,
+        "model_version": model_info["version"],
+        "base_value": float(base_value),
+        "contributions": contributions,
     }
