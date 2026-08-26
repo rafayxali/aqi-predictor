@@ -29,3 +29,7 @@ plotly==5.24.0
 # --- Notebook support (for EDA in VS Code / Colab) ---
 jupyter==1.0.0
 ipykernel==6.29.5
+
+# --- Web App Backend ---
+fastapi==0.115.0
+uvicorn==0.30.6
