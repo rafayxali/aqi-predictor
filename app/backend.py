@@ -1,18 +1,4 @@
-"""
-Pearls AQI Predictor - Backend API (FastAPI)
 
-Loads the latest promoted model from the Hopsworks Model Registry and
-the latest features from the Feature Store, and serves 3-day AQI
-predictions for Islamabad.
-
-Run locally:
-    pip install fastapi uvicorn
-    uvicorn backend:app --reload --port 8000
-
-Endpoints:
-    GET /predict   -> current AQI + 3-day forecast + hazard alerts
-    GET /health    -> simple liveness check
-"""
 
 import os
 import sys
@@ -46,7 +32,7 @@ FEATURE_COLUMNS = [
     "aqi_change_rate", "rolling_avg_aqi_3d", "rolling_avg_aqi_7d",
 ]
 
-# AQI category breakpoints (standard EPA scale)
+
 AQI_CATEGORIES = [
     (0, 50, "Good", "#00E400"),
     (51, 100, "Moderate", "#FFFF00"),
@@ -60,14 +46,11 @@ app = FastAPI(title="Pearls AQI Predictor API")
 
 _cache = {"project": None, "daily_df": None, "daily_df_ts": None}
 
-CACHE_TTL_SECONDS = 300  # avoid redundant Hopsworks reads across /predict + /history
+CACHE_TTL_SECONDS = 300  
 
 
 def with_retry(fn, attempts=3, delay_seconds=3):
-    """Hopsworks connections occasionally drop transiently (network
-    blips, not code bugs — seen with both the Arrow Flight query
-    service and plain REST calls). Retry a few times before giving up,
-    so a live API endpoint doesn't 500 users over a one-off hiccup."""
+    
     last_error = None
     for attempt in range(1, attempts + 1):
         try:
@@ -92,9 +75,7 @@ def get_project():
 
 
 def get_daily_df(project):
-    """Cached daily-aggregated feature data, shared by /predict and
-    /history so a single page load doesn't trigger two separate slow
-    Hopsworks Query Service reads."""
+    
     now = time.time()
     if _cache["daily_df"] is not None and (now - _cache["daily_df_ts"]) < CACHE_TTL_SECONDS:
         return _cache["daily_df"].copy()
@@ -140,9 +121,7 @@ def categorize_aqi(aqi_value):
 
 
 def fetch_weather_forecast(days=3):
-    """Real 3-day weather forecast from Open-Meteo (not model-predicted —
-    genuine meteorological forecast data). Fetches hourly and aggregates
-    to daily median, matching the same methodology used elsewhere."""
+    
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": LATITUDE,
@@ -184,10 +163,7 @@ def fetch_weather_forecast(days=3):
 
 
 def load_latest_model(project):
-    """Downloads whichever model is currently the latest (best) version
-    in the registry, and figures out how to load it based on which
-    artifact files it contains (Ridge/RF are .pkl, TensorFlow is
-    .keras + scaler + metadata — see training_pipeline.py's ARTIFACT_MAP)."""
+
     mr = project.get_model_registry()
     models = with_retry(lambda: mr.get_models("aqi_predictor"))
     if not models:
@@ -216,8 +192,7 @@ def load_latest_model(project):
 
 
 def load_latest_features(project):
-    """Returns the single most recent complete day (with lag/rolling
-    features already computed) as the prediction input row."""
+   
     daily = get_daily_df(project)
     latest_row = daily.dropna(subset=FEATURE_COLUMNS).iloc[-1]
     return latest_row
@@ -308,13 +283,7 @@ def predict():
 
 @app.get("/explain")
 def explain(horizon: str = "day_1"):
-    """
-    SHAP feature importance for the current prediction, using
-    TreeExplainer (fast, exact for tree-based models). Currently only
-    supports the Random Forest model type — if a Ridge or TensorFlow
-    model is ever promoted instead, this returns a clear message
-    rather than an incorrect explanation.
-    """
+  
     horizon_index = {"day_1": 0, "day_2": 1, "day_3": 2}
     if horizon not in horizon_index:
         raise HTTPException(status_code=400, detail="horizon must be day_1, day_2, or day_3")

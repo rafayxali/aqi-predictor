@@ -1,18 +1,3 @@
-"""
-One-time backfill push: loads the local data.csv (2-year historical
-dataset) and inserts it into the same Hopsworks Feature Group used by
-the live hourly pipeline ('aqi_features'), so both historical and live
-data live in one place going forward.
-
-Only RAW features are pushed (pollutants, weather, time features, aqi).
-Derived features (lags, rolling averages, change rate) are intentionally
-NOT stored here — they get recomputed at training time instead, after
-data is pulled out and aggregated to daily. This keeps the Feature Group
-schema identical between historical and live rows.
-
-Run locally, once:
-    python push_backfill_to_hopsworks.py
-"""
 
 import os
 import sys
@@ -31,9 +16,7 @@ HOPSWORKS_PROJECT = os.getenv("HOPSWORKS_PROJECT")
 
 DATA_PATH = "data.csv"
 
-# Raw columns that match the live pipeline's Feature Group schema.
-# Derived columns (aqi_change_rate, rolling_avg_aqi_3d/7d) are dropped
-# here on purpose — see module docstring.
+
 RAW_COLUMNS = [
     "city",
     "timestamp",

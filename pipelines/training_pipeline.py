@@ -1,29 +1,4 @@
-"""
-Pearls AQI Predictor - Phase 3 Training Pipeline (PRODUCTION VERSION)
 
-Reads ALL data (historical backfill + everything the hourly live
-pipeline has logged since) from the Hopsworks Feature Group, aggregates
-to daily, computes derived features (lags, rolling averages, change
-rate), then trains and compares three models.
-
-This is what the daily GitHub Actions training workflow runs — every
-day it reads the full accumulated dataset fresh, trains Ridge, Random
-Forest, and TensorFlow, evaluates all three, and registers whichever
-wins as a new Hopsworks Model Registry version — but ONLY if it beats
-the RMSE of the currently registered best version, so the model the
-dashboard serves never regresses.
-
-A naive "tomorrow = today" persistence baseline is also evaluated and
-printed every run (for visibility only — it does not gate promotion).
-
-Input:
-    Hopsworks Feature Group 'aqi_features' (raw features only)
-
-Output:
-    models/
-    training_results/metrics.json
-    Hopsworks Model Registry 'aqi_predictor' (new version, if improved)
-"""
 
 import json
 import os
@@ -87,9 +62,7 @@ FEATURE_COLUMNS = [
     "rolling_avg_aqi_7d",
 ]
 
-# Maps a winning model's name to which artifact file(s) it saved locally,
-# so whichever of the 3 wins on a given day can be bundled for the
-# Model Registry upload.
+
 ARTIFACT_MAP = {
     "Ridge Regression": ["ridge_model.pkl"],
     "Random Forest": ["random_forest_model.pkl"],
@@ -97,9 +70,7 @@ ARTIFACT_MAP = {
 }
 
 
-# ============================================================
-# Load + aggregate from Hopsworks
-# ============================================================
+#load from hopwork
 
 def load_data_from_hopsworks():
     print("=" * 60)
@@ -124,12 +95,7 @@ def load_data_from_hopsworks():
 
 
 def aggregate_to_daily(df):
-    """
-    The Feature Group mixes daily historical rows (timestamp at
-    midnight) with hourly live rows (timestamp = whenever the pipeline
-    ran). Aggregate everything to one row per calendar day (median),
-    same methodology used when the historical backfill was built.
-    """
+   
     df = df.copy()
     df["date"] = df["timestamp"].dt.date
 
@@ -182,9 +148,7 @@ def create_targets(df):
     return df
 
 
-# ============================================================
-# Setup / validation
-# ============================================================
+
 
 def ensure_directories():
     os.makedirs(MODELS_DIR, exist_ok=True)
@@ -218,9 +182,7 @@ def prepare_train_test_data(df):
     return X_train, X_test, y_train, y_test
 
 
-# ============================================================
-# Evaluation
-# ============================================================
+
 
 def evaluate_model(model_name, y_true, y_pred):
     results = {"model": model_name, "horizons": {}}
@@ -259,12 +221,7 @@ def print_results(results):
 
 
 def evaluate_persistence_baseline(X_test, y_test):
-    """
-    Naive baseline: tomorrow/day+2/day+3 AQI all equal TODAY's AQI.
-    Printed for visibility only — does not affect model selection or
-    registry promotion. If the trained models don't clearly beat this,
-    that's a sign they aren't learning much beyond autocorrelation.
-    """
+  
     print("\n" + "=" * 60)
     print("Evaluating naive persistence baseline (tomorrow = today)")
     print("=" * 60)
@@ -274,10 +231,6 @@ def evaluate_persistence_baseline(X_test, y_test):
     print_results(results)
     return results
 
-
-# ============================================================
-# Ridge Regression
-# ============================================================
 
 def train_ridge(X_train, X_test, y_train, y_test):
     print("\n" + "=" * 60 + "\nTraining Ridge Regression\n" + "=" * 60)
@@ -293,10 +246,7 @@ def train_ridge(X_train, X_test, y_train, y_test):
                 os.path.join(MODELS_DIR, "ridge_model.pkl"))
     return results
 
-
-# ============================================================
-# Random Forest
-# ============================================================
+#random forest
 
 def train_random_forest(X_train, X_test, y_train, y_test):
     print("\n" + "=" * 60 + "\nTraining Random Forest\n" + "=" * 60)
@@ -311,9 +261,8 @@ def train_random_forest(X_train, X_test, y_train, y_test):
     return results
 
 
-# ============================================================
 # TensorFlow Neural Network
-# ============================================================
+
 
 def build_tensorflow_model(input_dim):
     model = keras.Sequential([
@@ -351,9 +300,9 @@ def train_tensorflow(X_train, X_test, y_train, y_test):
     return results
 
 
-# ============================================================
+
 # Model Registry
-# ============================================================
+
 
 def get_current_registry_best_rmse(project):
     """
@@ -402,9 +351,6 @@ def register_model(project, best_result):
     print(f"\nRegistered '{best_result['model']}' as Model Registry version v{model.version}.")
 
 
-# ============================================================
-# Main
-# ============================================================
 
 def main():
     ensure_directories()
@@ -453,9 +399,9 @@ def main():
     print(f"Overall MAE:  {best_result['overall']['mae']:.4f}")
     print(f"Overall R²:   {best_result['overall']['r2']:.4f}")
 
-    # --------------------------------------------------------
-    # Registry promotion decision — only overwrite if better
-    # --------------------------------------------------------
+
+    #only overwrite if better
+    
     current_best_rmse = get_current_registry_best_rmse(project)
     new_rmse = best_result["overall"]["rmse"]
 
