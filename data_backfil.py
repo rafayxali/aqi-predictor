@@ -1,31 +1,4 @@
-"""
-Historical data backfill for Pearls AQI Predictor.
 
-Builds a 2-year DAILY historical training dataset for Islamabad by combining:
-
-    - OpenWeather Air Pollution History API -> hourly pollutant concentrations
-    - Open-Meteo Archive API               -> hourly historical weather
-
-Hourly data is aggregated into DAILY MEDIANS.
-
-Output:
-    data.csv
-
-The script is RESUMABLE:
-    - If data.csv exists, it detects the latest completed date.
-    - It continues from the next date.
-    - Data is saved after every successful chunk.
-    - If the program terminates, previously saved data remains available.
-    - Duplicate dates are removed automatically.
-
-Run locally:
-
-    pip install requests pandas python-dotenv
-
-    Set OPENWEATHER_API_KEY in .env
-
-    python data_backfil.py
-"""
 
 import os
 import sys
