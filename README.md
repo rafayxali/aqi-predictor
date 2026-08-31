@@ -1,6 +1,6 @@
 # Pearls AQI Predictor
 
-A 100% serverless, end-to-end machine learning system that forecasts the Air Quality Index (AQI) for **Islamabad, Pakistan** three days in advance — automated hourly data collection, daily model retraining, and a live web dashboard.
+A serverless end-to-end machine learning system that forecasts the Air Quality Index (AQI) for **Islamabad, Pakistan** three days in advance — automated hourly data collection, daily model retraining, and a live web dashboard.
 
 **🔗 Live Dashboard:** [https://aqi-predictor-3pqvughkm9hvev7nlavn6u.streamlit.app/](https://aqi-predictor-3pqvughkm9hvev7nlavn6u.streamlit.app/)
 
@@ -8,14 +8,14 @@ A 100% serverless, end-to-end machine learning system that forecasts the Air Qua
 
 ## Features
 
-- 🌫️ **3-day AQI forecast** using a Random Forest model (compared daily against Ridge Regression and TensorFlow)
-- ⏰ **Hourly feature pipeline** — live pollutant + weather data via OpenWeather
-- 🔁 **Daily training pipeline** — retrains, compares, and auto-promotes the best model
-- 📊 **Historical trend charts + AQI calendar heatmap**
-- 🌦️ **3-day weather forecast** (real meteorological data from Open-Meteo)
-- ⚠️ **Hazard alerts** when forecasted AQI crosses unhealthy thresholds
-- 🔍 **SHAP explainability** — see why the model predicted what it predicted
-- 🤖 **Fully automated via GitHub Actions** — no server maintained by hand
+-  **3-day AQI forecast** using a Random Forest model (compared daily against Ridge Regression and TensorFlow)
+-  **Hourly feature pipeline** — live pollutant + weather data via OpenWeather
+-  **Daily training pipeline** — retrains, compares, and auto-promotes the best model
+-  **Historical trend charts + AQI calendar heatmap**
+-  **3-day weather forecast** (real meteorological data from Open-Meteo)
+-  **Hazard alerts** when forecasted AQI crosses unhealthy thresholds
+-  **SHAP explainability** — see why the model predicted what it predicted
+-  **Fully automated via GitHub Actions** — no server maintained by hand
 
 ---
 
